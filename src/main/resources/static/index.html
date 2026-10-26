@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Incidencias · Soporte</title>
+    <link rel="icon" href="favicon.svg" type="image/svg+xml">
+    <link rel="stylesheet" href="css/estilos.css">
+</head>
+<body>
+<header class="cabecera">
+    <div class="contenedor cabecera__fila">
+        <div>
+            <h1>Incidencias</h1>
+            <p class="subtitulo">Gestión del equipo de soporte</p>
+        </div>
+        <button id="btnNueva" class="boton boton--primario" type="button">+ Nueva incidencia</button>
+    </div>
+</header>
+
+<main class="contenedor">
+    <section class="controles" aria-label="Filtros del listado">
+        <div class="campo-inline">
+            <label for="filtroEstado">Estado</label>
+            <select id="filtroEstado">
+                <option value="">Todas</option>
+                <option value="ABIERTA">Abierta</option>
+                <option value="EN_CURSO">En curso</option>
+                <option value="CERRADA">Cerrada</option>
+            </select>
+        </div>
+        <button id="btnRecargar" class="boton boton--secundario" type="button">Actualizar</button>
+        <span id="contador" class="contador" aria-live="polite"></span>
+    </section>
+
+    <div id="mensajeError" class="alerta" role="alert" hidden>
+        <span id="textoError"></span>
+        <button id="btnCerrarError" class="alerta__cerrar" type="button" aria-label="Cerrar mensaje de error">&times;</button>
+    </div>
+
+    <div id="cargando" class="cargando" hidden>Cargando incidencias…</div>
+
+    <div class="tabla-envoltura">
+        <table>
+            <caption class="oculto">Listado de incidencias técnicas</caption>
+            <thead>
+            <tr>
+                <th scope="col">#</th>
+                <th scope="col">Título</th>
+                <th scope="col">Prioridad</th>
+                <th scope="col">Estado</th>
+                <th scope="col">Creada</th>
+                <th scope="col">Asignada a</th>
+                <th scope="col"><span class="oculto">Acciones</span></th>
+            </tr>
+            </thead>
+            <tbody id="cuerpoTabla"></tbody>
+        </table>
+        <p id="sinResultados" class="vacio" hidden>No hay incidencias para el filtro seleccionado.</p>
+    </div>
+</main>
+
+<footer class="pie contenedor">
+    <span>Prueba técnica · Java Middle</span>
+</footer>
+
+<dialog id="dialogoNueva" class="dialogo" aria-labelledby="tituloDialogo">
+    <form id="formNueva" class="formulario" novalidate>
+        <h2 id="tituloDialogo">Nueva incidencia</h2>
+
+        <div id="errorFormulario" class="alerta alerta--compacta" role="alert" hidden></div>
+
+        <div class="campo">
+            <label for="titulo">Título <span class="obligatorio">*</span></label>
+            <input id="titulo" name="titulo" type="text" maxlength="100" required
+                   placeholder="Resumen breve de la incidencia">
+            <small class="ayuda">Máximo 100 caracteres.</small>
+        </div>
+
+        <div class="campo">
+            <label for="descripcion">Descripción</label>
+            <textarea id="descripcion" name="descripcion" rows="4" maxlength="1000"
+                      placeholder="Detalle del problema, pasos para reproducirlo…"></textarea>
+        </div>
+
+        <div class="campo">
+            <label for="prioridad">Prioridad <span class="obligatorio">*</span></label>
+            <select id="prioridad" name="prioridad" required>
+                <option value="BAJA">Baja</option>
+                <option value="MEDIA" selected>Media</option>
+                <option value="ALTA">Alta</option>
+            </select>
+        </div>
+
+        <div class="campo">
+            <label for="usuarioAsignado">Usuario asignado</label>
+            <select id="usuarioAsignado" name="usuarioAsignado">
+                <option value="">Sin asignar</option>
+            </select>
+        </div>
+
+        <div class="acciones-formulario">
+            <button id="btnCancelar" class="boton boton--secundario" type="button">Cancelar</button>
+            <button id="btnGuardar" class="boton boton--primario" type="submit">Crear incidencia</button>
+        </div>
+    </form>
+</dialog>
+
+<script src="js/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,356 @@
+:root {
+    --fondo: #f4f6f9;
+    --superficie: #ffffff;
+    --borde: #dfe4ea;
+    --texto: #1f2937;
+    --texto-suave: #6b7280;
+    --primario: #1d4ed8;
+    --primario-oscuro: #1e40af;
+    --peligro-fondo: #fdecec;
+    --peligro-texto: #a12121;
+    --radio: 10px;
+    --sombra: 0 1px 2px rgba(16, 24, 40, 0.06), 0 8px 24px rgba(16, 24, 40, 0.05);
+}
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    background: var(--fondo);
+    color: var(--texto);
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+    font-size: 15px;
+    line-height: 1.5;
+}
+
+.contenedor {
+    width: min(1100px, 100% - 2rem);
+    margin-inline: auto;
+}
+
+.cabecera {
+    background: var(--superficie);
+    border-bottom: 1px solid var(--borde);
+    padding: 1.25rem 0;
+}
+
+.cabecera__fila {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    align-items: center;
+    justify-content: space-between;
+}
+
+h1 {
+    margin: 0;
+    font-size: 1.55rem;
+    letter-spacing: -0.02em;
+}
+
+.subtitulo {
+    margin: 0.1rem 0 0;
+    color: var(--texto-suave);
+    font-size: 0.9rem;
+}
+
+.controles {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.75rem;
+    margin: 1.5rem 0 1rem;
+}
+
+.campo-inline {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+label {
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+
+select,
+input,
+textarea {
+    font: inherit;
+    color: inherit;
+    background: var(--superficie);
+    border: 1px solid var(--borde);
+    border-radius: 8px;
+    padding: 0.5rem 0.65rem;
+}
+
+select:focus,
+input:focus,
+textarea:focus,
+button:focus-visible {
+    outline: 2px solid var(--primario);
+    outline-offset: 1px;
+}
+
+.boton {
+    font: inherit;
+    font-weight: 600;
+    border-radius: 8px;
+    border: 1px solid transparent;
+    padding: 0.5rem 0.9rem;
+    cursor: pointer;
+    transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.boton--primario {
+    background: var(--primario);
+    color: #fff;
+}
+
+.boton--primario:hover {
+    background: var(--primario-oscuro);
+}
+
+.boton--secundario {
+    background: var(--superficie);
+    border-color: var(--borde);
+    color: var(--texto);
+}
+
+.boton--secundario:hover {
+    border-color: #b9c2cf;
+}
+
+.boton--enlace {
+    background: none;
+    border: none;
+    color: var(--primario);
+    padding: 0.15rem 0.25rem;
+    font-size: 0.85rem;
+    text-decoration: underline;
+}
+
+.contador {
+    margin-left: auto;
+    color: var(--texto-suave);
+    font-size: 0.85rem;
+}
+
+.alerta {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+    background: var(--peligro-fondo);
+    color: var(--peligro-texto);
+    border: 1px solid #f3c6c6;
+    border-radius: var(--radio);
+    padding: 0.75rem 1rem;
+    margin-bottom: 1rem;
+}
+
+.alerta--compacta {
+    margin-bottom: 0.25rem;
+    font-size: 0.9rem;
+}
+
+.alerta__cerrar {
+    background: none;
+    border: none;
+    color: inherit;
+    font-size: 1.2rem;
+    line-height: 1;
+    cursor: pointer;
+    padding: 0;
+}
+
+.cargando {
+    color: var(--texto-suave);
+    padding: 0.5rem 0 1rem;
+    font-size: 0.9rem;
+}
+
+.tabla-envoltura {
+    background: var(--superficie);
+    border: 1px solid var(--borde);
+    border-radius: var(--radio);
+    box-shadow: var(--sombra);
+    overflow-x: auto;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 760px;
+}
+
+th,
+td {
+    text-align: left;
+    padding: 0.75rem 0.9rem;
+    border-bottom: 1px solid var(--borde);
+    vertical-align: middle;
+}
+
+th {
+    background: #f8fafc;
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--texto-suave);
+}
+
+tbody tr:last-child td {
+    border-bottom: none;
+}
+
+tbody tr:hover {
+    background: #f9fbff;
+}
+
+.celda-id {
+    color: var(--texto-suave);
+    font-variant-numeric: tabular-nums;
+    width: 3rem;
+}
+
+.celda-titulo {
+    font-weight: 600;
+}
+
+.celda-descripcion {
+    display: block;
+    font-weight: 400;
+    font-size: 0.83rem;
+    color: var(--texto-suave);
+    margin-top: 0.15rem;
+}
+
+.etiqueta {
+    display: inline-block;
+    padding: 0.15rem 0.55rem;
+    border-radius: 999px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+.etiqueta--alta {
+    background: #fde8e8;
+    color: #9b1c1c;
+}
+
+.etiqueta--media {
+    background: #fff4d6;
+    color: #8a5a00;
+}
+
+.etiqueta--baja {
+    background: #e6f4ea;
+    color: #1e6b3a;
+}
+
+.etiqueta--abierta {
+    background: #e0edff;
+    color: #1e40af;
+}
+
+.etiqueta--en_curso {
+    background: #ede9fe;
+    color: #5b21b6;
+}
+
+.etiqueta--cerrada {
+    background: #eceff3;
+    color: #4b5563;
+}
+
+.vacio {
+    margin: 0;
+    padding: 2rem 1rem;
+    text-align: center;
+    color: var(--texto-suave);
+}
+
+.pie {
+    color: var(--texto-suave);
+    font-size: 0.8rem;
+    padding: 1.5rem 0 2rem;
+}
+
+/* Formulario / diálogo */
+.dialogo {
+    border: none;
+    border-radius: 14px;
+    padding: 0;
+    width: min(520px, calc(100% - 2rem));
+    box-shadow: 0 24px 60px rgba(16, 24, 40, 0.25);
+}
+
+.dialogo::backdrop {
+    background: rgba(15, 23, 42, 0.45);
+}
+
+.formulario {
+    display: flex;
+    flex-direction: column;
+    gap: 0.9rem;
+    padding: 1.5rem;
+}
+
+.formulario h2 {
+    margin: 0 0 0.25rem;
+    font-size: 1.2rem;
+}
+
+.campo {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+}
+
+.obligatorio {
+    color: #b42318;
+}
+
+.ayuda {
+    color: var(--texto-suave);
+    font-size: 0.78rem;
+}
+
+textarea {
+    resize: vertical;
+    min-height: 90px;
+}
+
+.acciones-formulario {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+}
+
+.oculto {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+@media (max-width: 640px) {
+    .contador {
+        margin-left: 0;
+        width: 100%;
+    }
+
+    .cabecera__fila {
+        align-items: flex-start;
+    }
+}
