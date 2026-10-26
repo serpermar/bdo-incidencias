@@ -10,7 +10,7 @@ import java.util.List;
 
 /**
  * Listado de usuarios para poder asignar incidencias desde el formulario de alta.
- * No forma parte de los endpoints pedidos, pero lo necesita el frontend opcional.
+ * Es una cosa opcional que realize y lo necesita el frontend.
  */
 @RestController
 @RequestMapping("/api/usuarios")

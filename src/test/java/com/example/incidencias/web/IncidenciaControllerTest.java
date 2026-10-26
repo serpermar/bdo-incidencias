@@ -10,7 +10,9 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.LocalDateTime;
@@ -30,6 +32,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * Tests de la capa web: contracto HTTP (códigos y JSON) sin levantar la base de datos.
  */
 @WebMvcTest(IncidenciaController.class)
+@Import(com.example.incidencias.config.SeguridadConfig.class)
+@WithMockUser(username = "test", roles = "SOPORTE")
 class IncidenciaControllerTest {
 
     @Autowired
@@ -42,7 +46,7 @@ class IncidenciaControllerTest {
     void post_valido_devuelve201ConLaIncidenciaCreada() throws Exception {
         when(servicio.crear(any())).thenReturn(new IncidenciaResponse(
                 1L, "No arranca la VPN", "Error 619", Prioridad.ALTA, Estado.ABIERTA,
-                LocalDateTime.of(2026, 10, 26, 10, 0), null));
+                LocalDateTime.of(2026, 10, 26, 10, 0), null, null, null, null, null));
 
         mockMvc.perform(post("/api/incidencias")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -101,9 +105,12 @@ class IncidenciaControllerTest {
 
     @Test
     void get_sinFiltro_devuelveListado() throws Exception {
-        when(servicio.listar(null)).thenReturn(List.of(
-                new IncidenciaResponse(1L, "Uno", null, Prioridad.BAJA, Estado.ABIERTA,
-                        LocalDateTime.of(2026, 10, 26, 9, 0), null)));
+        org.springframework.data.domain.PageImpl<IncidenciaResponse> pagina =
+                new org.springframework.data.domain.PageImpl<>(List.of(
+                        new IncidenciaResponse(1L, "Uno", null, Prioridad.BAJA, Estado.ABIERTA,
+                                LocalDateTime.of(2026, 10, 26, 9, 0), null, null, null, null, null)));
+        when(servicio.listar(any(), any(), any(), any(), any(org.springframework.data.domain.Pageable.class)))
+                .thenReturn(pagina);
 
         mockMvc.perform(get("/api/incidencias"))
                 .andExpect(status().isOk())
@@ -113,13 +120,20 @@ class IncidenciaControllerTest {
 
     @Test
     void get_conFiltroDeEstado_loPasaAlServicio() throws Exception {
-        when(servicio.listar(Estado.CERRADA)).thenReturn(List.of());
+        org.springframework.data.domain.PageImpl<IncidenciaResponse> pagina =
+                new org.springframework.data.domain.PageImpl<>(List.of());
+        when(servicio.listar(any(), any(), any(), any(), any(org.springframework.data.domain.Pageable.class)))
+                .thenReturn(pagina);
 
         mockMvc.perform(get("/api/incidencias").param("estado", "CERRADA"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$").isEmpty());
 
-        verify(servicio).listar(Estado.CERRADA);
+        verify(servicio).listar(org.mockito.ArgumentMatchers.isNull(),
+                org.mockito.ArgumentMatchers.eq(Estado.CERRADA),
+                org.mockito.ArgumentMatchers.isNull(),
+                org.mockito.ArgumentMatchers.isNull(),
+                any(org.springframework.data.domain.Pageable.class));
     }
 
     @Test

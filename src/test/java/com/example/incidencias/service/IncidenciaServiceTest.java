@@ -43,7 +43,7 @@ class IncidenciaServiceTest {
     @Test
     void alCrear_laIncidenciaNaceAbiertaConFechaYSeNormalizaElTitulo() {
         CrearIncidenciaRequest peticion = new CrearIncidenciaRequest(
-                "  No arranca la VPN  ", "Error 619 al conectar", Prioridad.ALTA, null);
+                "  No arranca la VPN  ", "Error 619 al conectar", Prioridad.ALTA, null, null, null);
         when(incidencias.save(any(Incidencia.class))).thenAnswer(invocacion -> invocacion.getArgument(0));
 
         IncidenciaResponse respuesta = servicio.crear(peticion);
@@ -66,7 +66,7 @@ class IncidenciaServiceTest {
         when(incidencias.save(any(Incidencia.class))).thenAnswer(invocacion -> invocacion.getArgument(0));
 
         IncidenciaResponse respuesta = servicio.crear(
-                new CrearIncidenciaRequest("Título", null, Prioridad.MEDIA, 1L));
+                new CrearIncidenciaRequest("Título", null, Prioridad.MEDIA, 1L, null, null));
 
         assertThat(respuesta.usuarioAsignado()).isNotNull();
         assertThat(respuesta.usuarioAsignado().nombre()).isEqualTo("Ana García");
@@ -77,7 +77,7 @@ class IncidenciaServiceTest {
         when(usuarios.findById(99L)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> servicio.crear(
-                new CrearIncidenciaRequest("Título", null, Prioridad.BAJA, 99L)))
+                new CrearIncidenciaRequest("Título", null, Prioridad.BAJA, 99L, null, null)))
                 .isInstanceOf(UsuarioNoEncontradoException.class)
                 .hasMessageContaining("99");
 
@@ -138,25 +138,34 @@ class IncidenciaServiceTest {
 
     @Test
     void listar_sinFiltro_usaLaConsultaOrdenadaCompleta() {
-        when(incidencias.findAllByOrderByFechaCreacionDescIdDesc())
-                .thenReturn(List.of(incidencia(Estado.ABIERTA), incidencia(Estado.CERRADA)));
+        org.springframework.data.domain.PageImpl<Incidencia> pagina =
+                new org.springframework.data.domain.PageImpl<>(
+                        List.of(incidencia(Estado.ABIERTA), incidencia(Estado.CERRADA)));
+        when(incidencias.findAll(any(org.springframework.data.jpa.domain.Specification.class),
+                any(org.springframework.data.domain.Pageable.class)))
+                .thenReturn(pagina);
 
         List<IncidenciaResponse> resultado = servicio.listar(null);
 
         assertThat(resultado).hasSize(2);
-        verify(incidencias, never()).findByEstadoOrderByFechaCreacionDescIdDesc(any());
+        verify(incidencias).findAll(any(org.springframework.data.jpa.domain.Specification.class),
+                any(org.springframework.data.domain.Pageable.class));
     }
 
     @Test
     void listar_conFiltro_usaLaConsultaPorEstado() {
-        when(incidencias.findByEstadoOrderByFechaCreacionDescIdDesc(Estado.CERRADA))
-                .thenReturn(List.of(incidencia(Estado.CERRADA)));
+        org.springframework.data.domain.PageImpl<Incidencia> pagina =
+                new org.springframework.data.domain.PageImpl<>(List.of(incidencia(Estado.CERRADA)));
+        when(incidencias.findAll(any(org.springframework.data.jpa.domain.Specification.class),
+                any(org.springframework.data.domain.Pageable.class)))
+                .thenReturn(pagina);
 
         List<IncidenciaResponse> resultado = servicio.listar(Estado.CERRADA);
 
         assertThat(resultado).hasSize(1);
         assertThat(resultado.get(0).estado()).isEqualTo(Estado.CERRADA);
-        verify(incidencias, never()).findAllByOrderByFechaCreacionDescIdDesc();
+        verify(incidencias).findAll(any(org.springframework.data.jpa.domain.Specification.class),
+                any(org.springframework.data.domain.Pageable.class));
     }
 
     private static Incidencia incidencia(Estado estado) {

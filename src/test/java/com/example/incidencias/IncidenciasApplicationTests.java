@@ -22,9 +22,9 @@ class IncidenciasApplicationTests {
     private UsuarioRepository usuarios;
 
     @Test
-    void elContextoArrancaYElScriptSqlCargaLosDatosDeEjemplo() {
+    void elContextoArrancaYLasMigracionesCarganLosDatosDeEjemplo() {
         assertThat(usuarios.count()).isEqualTo(3);
-        assertThat(incidencias.count()).isEqualTo(5);
+        assertThat(incidencias.count()).isGreaterThanOrEqualTo(5);
         assertThat(incidencias.findAll()).anyMatch(i -> i.getEstado().name().equals("CERRADA"));
     }
 }

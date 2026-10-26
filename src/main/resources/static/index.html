@@ -1,111 +1,155 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Incidencias · Soporte</title>
     <link rel="icon" href="favicon.svg" type="image/svg+xml">
-    <link rel="stylesheet" href="css/estilos.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/styles.css">
 </head>
+
 <body>
-<header class="cabecera">
-    <div class="contenedor cabecera__fila">
-        <div>
-            <h1>Incidencias</h1>
-            <p class="subtitulo">Gestión del equipo de soporte</p>
+    <a href="#contenido-principal" class="skip-link">Saltar al contenido principal</a>
+    <header class="cabecera">
+        <div class="contenedor cabecera__fila">
+            <div class="cabecera__marca">
+                <div class="cabecera__logo" aria-hidden="true">IT</div>
+                <div>
+                    <h1>Incidencias</h1>
+                    <p class="subtitulo">Gestión del equipo de soporte</p>
+                </div>
+            </div>
+            <button id="btnNueva" class="boton boton--primario" type="button">+ Nueva incidencia</button>
         </div>
-        <button id="btnNueva" class="boton boton--primario" type="button">+ Nueva incidencia</button>
-    </div>
-</header>
+    </header>
 
-<main class="contenedor">
-    <section class="controles" aria-label="Filtros del listado">
-        <div class="campo-inline">
-            <label for="filtroEstado">Estado</label>
-            <select id="filtroEstado">
-                <option value="">Todas</option>
-                <option value="ABIERTA">Abierta</option>
-                <option value="EN_CURSO">En curso</option>
-                <option value="CERRADA">Cerrada</option>
-            </select>
-        </div>
-        <button id="btnRecargar" class="boton boton--secundario" type="button">Actualizar</button>
-        <span id="contador" class="contador" aria-live="polite"></span>
-    </section>
+    <main id="contenido-principal" class="contenedor">
+        <section class="panel-filtros" aria-label="Filtros del listado">
+            <header class="panel-filtros__cabecera">
+                <div>
+                    <h2 class="panel-titulo">Listado de incidencias</h2>
+                    <p class="panel-subtitulo">Filtra, busca y gestiona las incidencias del equipo</p>
+                </div>
+                <span id="contador" class="contador" aria-live="polite"></span>
+            </header>
+            <div class="controles">
+                <div class="campo-inline">
+                    <label for="busqueda">Buscar</label>
+                    <input id="busqueda" type="search" placeholder="Título o descripción">
+                </div>
+                <div class="campo-inline">
+                    <label for="filtroEstado">Estado</label>
+                    <select id="filtroEstado">
+                        <option value="">Todos</option>
+                        <option value="ABIERTA">Abierta</option>
+                        <option value="EN_CURSO">En curso</option>
+                        <option value="CERRADA">Cerrada</option>
+                    </select>
+                </div>
+                <div class="campo-inline">
+                    <label for="filtroPrioridad">Prioridad</label>
+                    <select id="filtroPrioridad">
+                        <option value="">Todas</option>
+                        <option value="BAJA">Baja</option>
+                        <option value="MEDIA">Media</option>
+                        <option value="ALTA">Alta</option>
+                    </select>
+                </div>
+                <div class="campo-inline">
+                    <label for="filtroUsuario">Asignado</label>
+                    <select id="filtroUsuario">
+                        <option value="">Todos</option>
+                    </select>
+                </div>
+                <div class="controles__acciones">
+                    <button id="btnBuscar" class="boton boton--primario" type="button">Buscar</button>
+                    <button id="btnLimpiar" class="boton boton--secundario" type="button">Limpiar</button>
+                    <button id="btnRecargar" class="boton boton--secundario" type="button">Actualizar</button>
+                </div>
+            </div>
+        </section>
 
-    <div id="mensajeError" class="alerta" role="alert" hidden>
-        <span id="textoError"></span>
-        <button id="btnCerrarError" class="alerta__cerrar" type="button" aria-label="Cerrar mensaje de error">&times;</button>
-    </div>
-
-    <div id="cargando" class="cargando" hidden>Cargando incidencias…</div>
-
-    <div class="tabla-envoltura">
-        <table>
-            <caption class="oculto">Listado de incidencias técnicas</caption>
-            <thead>
-            <tr>
-                <th scope="col">#</th>
-                <th scope="col">Título</th>
-                <th scope="col">Prioridad</th>
-                <th scope="col">Estado</th>
-                <th scope="col">Creada</th>
-                <th scope="col">Asignada a</th>
-                <th scope="col"><span class="oculto">Acciones</span></th>
-            </tr>
-            </thead>
-            <tbody id="cuerpoTabla"></tbody>
-        </table>
-        <p id="sinResultados" class="vacio" hidden>No hay incidencias para el filtro seleccionado.</p>
-    </div>
-</main>
-
-<footer class="pie contenedor">
-    <span>Prueba técnica · Java Middle</span>
-</footer>
-
-<dialog id="dialogoNueva" class="dialogo" aria-labelledby="tituloDialogo">
-    <form id="formNueva" class="formulario" novalidate>
-        <h2 id="tituloDialogo">Nueva incidencia</h2>
-
-        <div id="errorFormulario" class="alerta alerta--compacta" role="alert" hidden></div>
-
-        <div class="campo">
-            <label for="titulo">Título <span class="obligatorio">*</span></label>
-            <input id="titulo" name="titulo" type="text" maxlength="100" required
-                   placeholder="Resumen breve de la incidencia">
-            <small class="ayuda">Máximo 100 caracteres.</small>
+        <div id="mensajeError" class="alerta" role="alert" aria-live="assertive" hidden>
+            <span id="textoError"></span>
+            <button id="btnCerrarError" class="alerta__cerrar" type="button"
+                aria-label="Cerrar mensaje de error">&times;</button>
         </div>
 
-        <div class="campo">
-            <label for="descripcion">Descripción</label>
-            <textarea id="descripcion" name="descripcion" rows="4" maxlength="1000"
-                      placeholder="Detalle del problema, pasos para reproducirlo…"></textarea>
+        <div id="cargando" class="cargando" aria-live="polite" hidden>
+            <span class="cargando__punto"></span>
         </div>
 
-        <div class="campo">
-            <label for="prioridad">Prioridad <span class="obligatorio">*</span></label>
-            <select id="prioridad" name="prioridad" required>
-                <option value="BAJA">Baja</option>
-                <option value="MEDIA" selected>Media</option>
-                <option value="ALTA">Alta</option>
-            </select>
+        <div class="tabla-envoltura">
+            <table>
+                <caption class="tabla-caption">Listado de incidencias</caption>
+                <thead>
+                    <tr>
+                        <th scope="col">#</th>
+                        <th scope="col">Título</th>
+                        <th scope="col">Prioridad</th>
+                        <th scope="col">Estado</th>
+                        <th scope="col">Creada</th>
+                        <th scope="col">Asignada</th>
+                        <th scope="col"><span class="oculto">Acciones</span></th>
+                    </tr>
+                </thead>
+                <tbody id="cuerpoTabla"></tbody>
+            </table>
+            <p id="sinResultados" class="vacio" hidden>No hay incidencias para el filtro seleccionado.</p>
         </div>
+    </main>
 
-        <div class="campo">
-            <label for="usuarioAsignado">Usuario asignado</label>
-            <select id="usuarioAsignado" name="usuarioAsignado">
-                <option value="">Sin asignar</option>
-            </select>
-        </div>
+    <footer class="pie contenedor">
+        <span>Prueba técnica · Java Middle</span>
+    </footer>
 
-        <div class="acciones-formulario">
-            <button id="btnCancelar" class="boton boton--secundario" type="button">Cancelar</button>
-            <button id="btnGuardar" class="boton boton--primario" type="submit">Crear incidencia</button>
-        </div>
-    </form>
-</dialog>
+    <dialog id="dialogoNueva" class="dialogo" aria-labelledby="tituloDialogo">
+        <form id="formNueva" class="formulario" novalidate>
+            <h2 id="tituloDialogo">Nueva incidencia</h2>
 
-<script src="js/app.js"></script>
+            <div id="errorFormulario" class="alerta alerta--compacta" role="alert" hidden></div>
+
+            <div class="campo">
+                <label for="titulo">Título <span class="obligatorio">*</span></label>
+                <input id="titulo" name="titulo" type="text" maxlength="100" required
+                    placeholder="Resumen breve de la incidencia">
+                <small class="ayuda">Máximo 100 caracteres.</small>
+            </div>
+
+            <div class="campo">
+                <label for="descripcion">Descripción</label>
+                <textarea id="descripcion" name="descripcion" rows="4" maxlength="1000"
+                    placeholder="Detalle del problema, pasos para reproducirlo…"></textarea>
+            </div>
+
+            <div class="campo">
+                <label for="prioridad">Prioridad <span class="obligatorio">*</span></label>
+                <select id="prioridad" name="prioridad" required>
+                    <option value="BAJA">Baja</option>
+                    <option value="MEDIA" selected>Media</option>
+                    <option value="ALTA">Alta</option>
+                </select>
+            </div>
+
+            <div class="campo">
+                <label for="usuarioAsignado">Usuario asignado</label>
+                <select id="usuarioAsignado" name="usuarioAsignado">
+                    <option value="">Sin asignar</option>
+                </select>
+            </div>
+
+            <div class="acciones-formulario">
+                <button id="btnCancelar" class="boton boton--secundario" type="button">Cancelar</button>
+                <button id="btnGuardar" class="boton boton--primario" type="submit">Crear incidencia</button>
+            </div>
+        </form>
+    </dialog>
+
+    <script src="js/app.js"></script>
 </body>
+
 </html>

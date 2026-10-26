@@ -1,27 +1,8 @@
 spring:
   application:
     name: incidencias
-
-  datasource:
-    url: jdbc:h2:mem:incidencias;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
-    username: sa
-    password: ""
-
-  jpa:
-    open-in-view: false
-    hibernate:
-      # El esquema lo define schema.sql, no Hibernate. Así el SQL es la fuente de verdad.
-      ddl-auto: none
-
-  sql:
-    init:
-      mode: always
-      encoding: UTF-8
-
-  h2:
-    console:
-      enabled: true
-      path: /h2-console
+  profiles:
+    default: dev
 
   jackson:
     serialization:
@@ -29,6 +10,15 @@ spring:
 
 server:
   port: 8080
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: when-authorized
 
 logging:
   level:

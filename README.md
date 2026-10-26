@@ -1,23 +1,27 @@
 # Gestión de incidencias · Prueba técnica Java Middle
 
 Pequeña aplicación web para registrar y consultar incidencias técnicas de un equipo de soporte.
-Incluye API REST, base de datos H2 en memoria, frontend en HTML/CSS/JavaScript sin frameworks y tests.
+Incluye API REST, base de datos H2 en memoria/PostgreSQL, frontend en HTML/CSS/JavaScript sin frameworks, seguridad, auditoría, paginación, filtros combinados y tests.
 
 ## Stack
 
 | Pieza | Elección |
 |---|---|
 | Lenguaje | Java 17 |
-| Framework | Spring Boot 3.3.5 (Spring MVC, Spring Data JPA, Bean Validation) |
-| Base de datos | H2 en memoria |
+| Framework | Spring Boot 3.3.5 (Spring MVC, Spring Data JPA, Bean Validation, Spring Security, Actuator) |
+| Base de datos | H2 en memoria (dev) / PostgreSQL (perfil postgres) |
+| Migraciones | Flyway |
 | Build | Maven (con Maven Wrapper incluido) |
-| Tests | JUnit 5, Mockito, AssertJ y MockMvc |
+| Tests | JUnit 5, Mockito, AssertJ, MockMvc y Spring Security Test |
 | Frontend | HTML, CSS y JavaScript nativos (sin frameworks) |
+| Documentación API | SpringDoc OpenAPI / Swagger UI |
+| Contenedores | Docker / Docker Compose |
 
 ## Arranque rápido
 
 Requisitos: **JDK 17** instalado y `JAVA_HOME` apuntando a él. No hace falta tener Maven: el wrapper lo descarga.
 
+### Modo desarrollo (H2 + Flyway)
 ```bash
 # Windows
 .\mvnw.cmd spring-boot:run
@@ -26,12 +30,31 @@ Requisitos: **JDK 17** instalado y `JAVA_HOME` apuntando a él. No hace falta te
 ./mvnw spring-boot:run
 ```
 
+### Con PostgreSQL (Docker Compose)
+```bash
+docker compose up --build
+```
+
 La aplicación queda en <http://localhost:8080>.
+
+### Credenciales de acceso
+Los endpoints `/api/**` requieren autenticación **HTTP Basic** (usuarios en memoria):
+
+| Usuario | Contraseña | Rol |
+|---|---|---|
+| `soporte` | `soporte123` | `ROLE_SOPORTE` |
+| `jefe` | `jefe123` | `ROLE_JEFE` |
+
+Solo `SOPORTE` o `JEFE` pueden crear incidencias (`POST`) o cambiar su estado (`PATCH`). La lectura del listado y usuarios requiere estar autenticado. Los recursos estáticos, Swagger, H2 Console y `/actuator/health` son accesibles sin login.
 
 | Recurso | URL |
 |---|---|
 | Frontend | <http://localhost:8080/> |
 | API de incidencias | <http://localhost:8080/api/incidencias> |
+| API de usuarios | <http://localhost:8080/api/usuarios> |
+| Swagger UI | <http://localhost:8080/swagger-ui.html> |
+| OpenAPI JSON | <http://localhost:8080/v3/api-docs> |
+| Actuator Health | <http://localhost:8080/actuator/health> |
 | Consola H2 | <http://localhost:8080/h2-console> (`jdbc:h2:mem:incidencias`, usuario `sa`, sin contraseña) |
 
 ### Tests
@@ -55,27 +78,27 @@ java -jar target/incidencias-1.0.0.jar
 
 | Método | Ruta | Descripción | Códigos |
 |---|---|---|---|
-| `POST` | `/api/incidencias` | Crea una incidencia en estado `ABIERTA` | `201`, `400` |
-| `GET` | `/api/incidencias?estado=ABIERTA` | Lista incidencias; el filtro por estado es opcional | `200`, `400` |
-| `PATCH` | `/api/incidencias/{id}/estado` | Cambia el estado | `200`, `400`, `404`, `409` |
-| `GET` | `/api/usuarios` | Lista usuarios para el formulario de alta (extra) | `200` |
+| `POST` | `/api/incidencias` | Crea una incidencia en estado `ABIERTA` (requiere rol `SOPORTE`/`JEFE`) | `201`, `400`, `401`, `403` |
+| `GET` | `/api/incidencias` | Lista incidencias con paginación, ordenación y filtros combinados (`q`, `estado`, `prioridad`, `usuarioId`, `page`, `size`, `sort`) | `200`, `400`, `401` |
+| `PATCH` | `/api/incidencias/{id}/estado` | Cambia el estado con auditoría (requiere rol `SOPORTE`/`JEFE`). Aplica bloqueo optimista (`@Version`) | `200`, `400`, `401`, `403`, `404`, `409` |
+| `GET` | `/api/usuarios` | Lista usuarios para el formulario de alta (extra) | `200`, `401` |
 
 ### Ejemplos
 
 ```bash
-# Crear (el estado siempre es ABIERTA; no se acepta en la petición)
-curl -i -X POST http://localhost:8080/api/incidencias \
+# Crear (el estado siempre es ABIERTA; autenticación requerida)
+curl -i -u soporte:soporte123 -X POST http://localhost:8080/api/incidencias \
   -H "Content-Type: application/json" \
-  -d '{"titulo":"No arranca la VPN","descripcion":"Error 619","prioridad":"ALTA","usuarioAsignadoId":1}'
+  -d '{"titulo":"No arranca la VPN","descripcion":"Error 619","prioridad":"ALTA","categoria":"REDES","fechaLimite":"2026-10-30","usuarioAsignadoId":1}'
 
-# Listar todas
-curl http://localhost:8080/api/incidencias
+# Listar con filtros combinados + paginación
+curl -u soporte:soporte123 "http://localhost:8080/api/incidencias?q=VPN&estado=ABIERTA&prioridad=ALTA&page=0&size=10"
 
-# Filtrar por estado
-curl "http://localhost:8080/api/incidencias?estado=CERRADA"
+# Filtrar por estado (compatible con listado sin paginación)
+curl -u soporte:soporte123 "http://localhost:8080/api/incidencias?estado=CERRADA"
 
-# Cambiar estado
-curl -i -X PATCH http://localhost:8080/api/incidencias/3/estado \
+# Cambiar estado (se guarda quién lo audita)
+curl -i -u soporte:soporte123 -X PATCH http://localhost:8080/api/incidencias/3/estado \
   -H "Content-Type: application/json" \
   -d '{"estado":"EN_CURSO"}'
 ```
@@ -94,7 +117,11 @@ Respuesta de creación (`201`):
     "id": 1,
     "nombre": "Ana García",
     "email": "ana.garcia@example.com"
-  }
+  },
+  "categoria": "REDES",
+  "fechaLimite": "2026-10-30",
+  "auditadoPor": null,
+  "fechaUltimaModificacionEstado": null
 }
 ```
 
@@ -124,13 +151,17 @@ Todos los errores de la API devuelven la misma estructura:
 - El estado inicial no lo elige el cliente: la entidad nace `ABIERTA`.
 - `PATCH` sobre una incidencia `CERRADA` con un estado distinto de `CERRADA` devuelve `409`.
   Volver a enviar `CERRADA` sobre una incidencia ya cerrada es idempotente y devuelve `200` (no es reabrir).
+- Si dos usuarios intentan modificar la misma incidencia a la vez se aplica **bloqueo optimista** (`@Version`) y se devuelve `409` con mensaje claro.
 - `400` cubre: campos obligatorios/formatos inválidos, título de más de 100 caracteres, enums desconocidos y filtros con valores no permitidos.
-- `404` si la incidencia (o el usuario asignado) no existen; `409` para la regla de negocio.
+- `404` si la incidencia (o el usuario asignado) no existen; `409` para la regla de negocio o conflicto optimista.
+- Al cambiar el estado se registra `auditadoPor` y `fechaUltimaModificacionEstado`.
 
 ## Frontend
 
+- Diseño moderno con modo claro/oscuro automático (`prefers-color-scheme`), tipografía Inter, accesibilidad básica (skip-link, `aria-live`) y `styles.css`.
 - Tabla de incidencias consumida con `fetch`, con prioridad, estado, fecha y usuario asignado.
-- Desplegable de filtro por estado que recarga solo la tabla (sin recargar la página) llamando a `GET /api/incidencias?estado=...`.
+- Filtros combinados: búsqueda por título/descripción (`q`), estado, prioridad y usuario asignado. Recarga solo la tabla sin recargar la página.
+- Paginación soportada desde la API (`Page<IncidenciaResponse>`), manteniendo compatibilidad con el listado sin paginación.
 - Mensaje de error visible y claro si falla la API o la red, mostrando el `message`/`detalles` del JSON de error.
 - Formulario opcional de alta en un `<dialog>`: valida en cliente, envía el POST y muestra los errores de validación que devuelve el servidor.
 - Acciones rápidas por fila para pasar de `ABIERTA` a `EN_CURSO` y de `EN_CURSO` a `CERRADA` (demuestran el `PATCH` y la regla del 409).
@@ -140,65 +171,66 @@ Todos los errores de la API devuelven la misma estructura:
 
 ```
 src/main/java/com/example/incidencias
-├── domain/           Entidades JPA y enums (Incidencia, Usuario, Estado, Prioridad)
-├── repository/       Spring Data JPA (IncidenciaRepository, UsuarioRepository)
+├── config/           Configuración (Seguridad, Auditoría)
+├── domain/           Entidades JPA y enums (Incidencia, Usuario, Estado, Prioridad, Categoria, ComentarioIncidencia)
+├── repository/       Spring Data JPA + Specifications (IncidenciaRepository, UsuarioRepository)
 ├── service/          Lógica de negocio y excepciones de dominio
 └── web/              Controladores REST, DTOs y manejador global de errores
 src/main/resources
-├── application.yml
-├── schema.sql        Script único: tablas, restricciones, índices y datos de ejemplo
-└── static/           index.html, css/estilos.css, js/app.js
-src/test/java/...     Tests de servicio, de contrato HTTP y de arranque
+├── application.yml / application-dev.yml / application-postgres.yml
+├── db/migration/     Migraciones Flyway (V1__init.sql)
+└── static/           index.html, css/styles.css, js/app.js
+src/test/java/...     Tests unitarios, de contrato, de integración y de arranque
+Dockerfile, docker-compose.yml, Jenkinsfile, sonar-project.properties
 ```
 
 ## Base de datos
 
-`src/main/resources/schema.sql` es el único script SQL y la fuente de verdad del esquema:
+El esquema se gestiona con **Flyway** en `src/main/resources/db/migration/V1__init.sql`:
 
-- Tablas `usuarios` e `incidencias` con PK, FK, `UNIQUE` en el email y `CHECK` para prioridad y estado.
-- Índices por `estado` y `usuario_id`, que son los filtros habituales.
-- Datos de ejemplo: 3 usuarios y 5 incidencias (una de ellas `CERRADA`, para poder probar el 409).
-
-Hibernate no genera el esquema (`ddl-auto: none`); así el SQL entregado es exactamente el que se ejecuta.
+- Tablas `usuarios`, `incidencias` y `comentarios_incidencia` con PK, FK, `UNIQUE` en el email y `CHECK` para prioridad, estado y categoría.
+- Campos añadidos: `version` (`@Version`), `categoria`, `fecha_limite`, `auditado_por`, `fecha_ultima_modificacion_estado`.
+- Índices por `estado` y `usuario_id`.
+- Datos de ejemplo: 3 usuarios, 5 incidencias (una `CERRADA`) y 2 comentarios.
+- Hibernate valida el esquema (`ddl-auto: validate`).
 
 ## Tests
 
-`.\mvnw.cmd test` ejecuta 21 tests:
+`.\mvnw.cmd test` ejecuta **23 tests**:
 
 - **`IncidenciaServiceTest` (10)**: regla de incidencias cerradas (no reabrir, tampoco a `EN_CURSO`), idempotencia de `CERRADA`, alta con estado `ABIERTA`, normalización del título, usuario inexistente, incidencia inexistente, transición válida y filtros del listado.
-- **`IncidenciaControllerTest` (10)**: contrato HTTP con `@WebMvcTest` y servicio mockeado: `201`, validaciones `400` (título vacío, título > 100, prioridad inválida), filtros, `404`, `409` y estructura del JSON de error.
-- **`IncidenciasApplicationTests` (1)**: arranca el contexto completo y comprueba que `schema.sql` crea las tablas y carga los datos de ejemplo.
+- **`IncidenciaControllerTest` (10)**: contrato HTTP con `@WebMvcTest` + Spring Security mockeado: `201`, validaciones `400` (título vacío, título > 100, prioridad inválida), filtros, `404`, `409` y estructura del JSON de error.
+- **`IncidenciasApplicationTests` (1)**: arranca el contexto completo y comprueba que las migraciones cargan los datos de ejemplo.
+- **`IncidenciaIntegracionTest` (2)**: pruebas de integración con `@SpringBootTest` + `MockMvc` (flujo completo crear/listar/cambiar estado con auditoría y regla del `409`).
 
 ## Decisiones técnicas
 
-1. **Spring Boot 3 + Java 17 + Maven Wrapper.** Es el stack más habitual para este tipo de aplicación y permite arrancar sin instalar Maven. Descarté Jakarta EE puro porque exigía más configuración (servidor, JPA, validación) para el mismo resultado y no aportaba nada al ejercicio.
+1. **Spring Boot 3 + Java 17 + Maven Wrapper.** Es el stack más habitual para este tipo de aplicación y permite arrancar sin instalar Maven.
 2. **Separación en capas y DTOs.** `controller → service → repository`. Los controladores no exponen entidades JPA, sino `record`s de respuesta (`IncidenciaResponse`, `UsuarioResponse`); así el contrato HTTP no depende del modelo de persistencia y se evita el problema de las relaciones perezosas al serializar.
 3. **Validación en el borde, negocio en el servicio, HTTP en un `@RestControllerAdvice`.** Los DTOs usan Bean Validation (`@NotBlank`, `@Size`, `@NotNull`); la regla de “una incidencia cerrada no se reabre” vive en el servicio porque es negocio, no validación de formato; el manejador global traduce excepciones a códigos y al JSON común.
-4. **Formato de error propio (`ApiError`) en lugar de `ProblemDetail`.** `ProblemDetail` es el estándar de Spring 6, pero el enunciado pide un formato coherente y sencillo de consumir desde JavaScript. Un `record` propio con `message` y `detalles` deja el contrato explícito y fácil de testear. La alternativa (extender `ResponseEntityExceptionHandler`) habría reutilizado más código, pero mezclaba dos formatos.
-5. **JPA + `@EntityGraph` y `open-in-view: false`.** El listado necesita el usuario asignado; el `EntityGraph` lo trae en la misma consulta y evita el N+1. Desactivar `open-in-view` obliga a resolver las relaciones dentro de la transacción del servicio, que es donde se mapea a DTO.
-6. **Enums como `STRING` y `CHECK` en la base de datos.** Legibilidad en SQL y defensa en profundidad: aunque alguien inserte saltándose la aplicación, la base de datos rechaza valores fuera del dominio.
-7. **Un único `schema.sql` con `ddl-auto: none`.** Cumple el requisito de un solo script y garantiza que el esquema revisado es el que se ejecuta. En un proyecto real usaría Flyway o Liquibase para versionar migraciones; aquí el H2 es en memoria y se recrea en cada arranque.
-8. **Fechas con `LocalDateTime`.** La aplicación es de un único equipo y no hay husos horarios en juego; `Instant` sería mejor si hubiera varios clientes o persistencia a largo plazo. La fecha la pone el dominio (`new Incidencia(...)`), no el cliente.
-9. **Frontend sin frameworks.** `fetch` + DOM + `Intl.DateTimeFormat`. Se construyen nodos y se usa `textContent` para no introducir XSS con títulos o descripciones. El filtro se resuelve en servidor para que la API demuestre el parámetro `estado`.
-10. **Estrategia de tests.** Tests unitarios del servicio con Mockito (rápidos, sin contexto) para las reglas; tests de contrato del controlador con `@WebMvcTest` para códigos y JSON; un test de arranque para verificar el script SQL. No he añadido tests de repositorio: con H2 y consultas derivadas el valor sería bajo frente al coste de mantenerlos.
-11. **Extras justificados.** `GET /api/usuarios` existe solo para poblar el desplegable del formulario opcional; las acciones de cambio de estado en la tabla permiten probar el `PATCH` sin salir de la interfaz.
+4. **Formato de error propio (`ApiError`) en lugar de `ProblemDetail`.** Contrato explícito, sencillo de consumir desde JavaScript y fácil de testear. Se añade manejo para `ObjectOptimisticLockingFailureException`.
+5. **JPA + `@EntityGraph` + `JpaSpecificationExecutor` + `open-in-view: false`.** El listado usa `Specification` para filtros combinados, `Pageable` para paginación y `@EntityGraph` para evitar el N+1. Desactivar `open-in-view` obliga a resolver las relaciones dentro de la transacción.
+6. **Enums como `STRING` y `CHECK` en la base de datos.** Legibilidad en SQL y defensa en profundidad.
+7. **Flyway con migraciones versionadas.** Se pasa de `schema.sql` a `db/migration/V1__init.sql`. Permite evolucionar el esquema entre entornos y se prepara para PostgreSQL con perfiles.
+8. **Bloqueo optimista (`@Version`).** Evita que dos usuarios pisen el mismo cambio de estado. Se traduce a `409` manteniendo el formato de error.
+9. **Spring Security + autorización por roles.** Autenticación HTTP Basic en memoria. `POST/PATCH` restringidos a `SOPORTE`/`JEFE` con `@EnableMethodSecurity`. Se audita quién cambia el estado (`auditadoPor`, `fechaUltimaModificacionEstado`).
+10. **Ampliación del modelo.** Se añaden `Categoria`, `fechaLimite`, `comentarios` embebidos y auditoría para demostrar evolución del dominio.
+11. **Fechas con `LocalDateTime`/`LocalDate`.** Adecuado al contexto de la aplicación.
+12. **Frontend sin frameworks.** `fetch` + DOM + `Intl.DateTimeFormat`. Se construyen nodos y se usa `textContent`. Diseño responsive con modo claro/oscuro automático.
+13. **Estrategia de tests.** Unitarios con Mockito, contrato con `@WebMvcTest` + Spring Security, integración con `@SpringBootTest` + `MockMvc` y test de arranque.
+14. **Extras justificados.** `GET /api/usuarios` para el formulario opcional; acciones rápidas para probar el `PATCH`; OpenAPI/Swagger, Actuator, Dockerfile y docker-compose.
 
 ## Pendientes y mejoras con más tiempo
 
-- Paginación y ordenación configurable en el listado (hoy devuelve todo; con volumen real no escala).
-- Autenticación/autorización (Spring Security) y auditoría de quién cambia cada estado.
-- Migraciones versionadas con Flyway y perfil de configuración para una base de datos real (PostgreSQL).
-- Bloqueo optimista (`@Version`) para evitar que dos usuarios pisen el mismo cambio de estado.
-- Documentación OpenAPI/Swagger y pruebas de integración de la API con `@SpringBootTest` + `MockMvc` sobre H2.
-- Alta de usuarios e incidencias con más campos (categoría, fecha límite, comentarios).
-- Búsqueda por texto y filtro combinado por prioridad y usuario.
-- Pipeline de Jenkins con análisis de SonarQube y despliegue en contenedor.
-- Tests end-to-end del frontend y revisión de accesibilidad con lector de pantalla.
+- **Autenticación real:** sustituir usuarios en memoria por base de datos + JWT/OAuth2.
+- **Migraciones completas:** añadir más versiones de Flyway para evolución futura.
+- **Autorización más granular:** reglas por incidencia/propietario además de roles.
+- **Notificaciones:** alertas por correo al cambiar el estado o al acercarse la fecha límite.
+- **Pipeline completo:** integración real con Jenkins, SonarQube, despliegue en contenedor/orquestador (Kubernetes).
+- **Tests E2E:** Playwright/Cypress para cubrir el flujo completo del frontend.
+- **Accesibilidad avanzada:** revisión con herramientas automatizadas (axe) y pruebas con lector de pantalla.
+- **Internacionalización (i18n):** soporte multiidioma para el frontend.
 
 ## Uso de IA
 
 He utilizado un asistente de IA (OpenCode) como apoyo para generar el esqueleto del proyecto, parte del CSS y borradores de tests y documentación. Todo el código está revisado, compilado y ejecutado localmente; las decisiones de diseño están tomadas y justificadas en este README, y puedo explicar y modificar cualquier parte del proyecto en la sesión de revisión.
-
-## Autor
-
-Sergi Pérez

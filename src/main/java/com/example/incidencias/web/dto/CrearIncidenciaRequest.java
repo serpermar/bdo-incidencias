@@ -1,9 +1,12 @@
 package com.example.incidencias.web.dto;
 
+import com.example.incidencias.domain.Categoria;
 import com.example.incidencias.domain.Prioridad;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
+
+import java.time.LocalDate;
 
 /**
  * Datos de entrada para crear una incidencia.
@@ -21,6 +24,10 @@ public record CrearIncidenciaRequest(
         @NotNull(message = "La prioridad es obligatoria")
         Prioridad prioridad,
 
-        Long usuarioAsignadoId
+        Long usuarioAsignadoId,
+
+        Categoria categoria,
+
+        LocalDate fechaLimite
 ) {
 }

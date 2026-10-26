@@ -23,7 +23,12 @@
 
     const el = {
         cuerpoTabla: document.getElementById('cuerpoTabla'),
+        busqueda: document.getElementById('busqueda'),
         filtroEstado: document.getElementById('filtroEstado'),
+        filtroPrioridad: document.getElementById('filtroPrioridad'),
+        filtroUsuario: document.getElementById('filtroUsuario'),
+        btnBuscar: document.getElementById('btnBuscar'),
+        btnLimpiar: document.getElementById('btnLimpiar'),
         btnRecargar: document.getElementById('btnRecargar'),
         contador: document.getElementById('contador'),
         mensajeError: document.getElementById('mensajeError'),
@@ -44,60 +49,110 @@
     };
 
     function iniciar() {
-        el.filtroEstado.addEventListener('change', cargarIncidencias);
-        el.btnRecargar.addEventListener('click', cargarIncidencias);
-        el.btnCerrarError.addEventListener('click', ocultarError);
-        el.btnNueva.addEventListener('click', abrirFormulario);
-        el.btnCancelar.addEventListener('click', () => el.dialogo.close());
-        el.formNueva.addEventListener('submit', enviarFormulario);
-
-        // Al cerrar con Escape también limpiamos el error del formulario.
-        el.dialogo.addEventListener('close', limpiarErrorFormulario);
+        if (el.btnBuscar) {
+            el.btnBuscar.addEventListener('click', cargarIncidencias);
+        }
+        if (el.btnLimpiar) {
+            el.btnLimpiar.addEventListener('click', limpiarFiltros);
+        }
+        if (el.btnRecargar) {
+            el.btnRecargar.addEventListener('click', cargarIncidencias);
+        }
+        if (el.btnCerrarError) {
+            el.btnCerrarError.addEventListener('click', ocultarError);
+        }
+        if (el.btnNueva) {
+            el.btnNueva.addEventListener('click', abrirFormulario);
+        }
+        if (el.btnCancelar) {
+            el.btnCancelar.addEventListener('click', () => {
+                if (el.dialogo) {
+                    el.dialogo.close();
+                }
+            });
+        }
+        if (el.formNueva) {
+            el.formNueva.addEventListener('submit', enviarFormulario);
+        }
+        if (el.dialogo) {
+            el.dialogo.addEventListener('close', limpiarErrorFormulario);
+        }
 
         cargarIncidencias();
         cargarUsuarios();
+        cargarUsuariosFiltro();
     }
 
     // ---------------------------------------------------------------------
     // Listado
     // ---------------------------------------------------------------------
+    function limpiarFiltros() {
+        if (el.busqueda) el.busqueda.value = '';
+        if (el.filtroEstado) el.filtroEstado.value = '';
+        if (el.filtroPrioridad) el.filtroPrioridad.value = '';
+        if (el.filtroUsuario) el.filtroUsuario.value = '';
+        cargarIncidencias();
+    }
+
     async function cargarIncidencias() {
         ocultarError();
         mostrarCargando(true);
 
-        const estado = el.filtroEstado.value;
-        const url = estado
-            ? `${API_INCIDENCIAS}?estado=${encodeURIComponent(estado)}`
-            : API_INCIDENCIAS;
+        const params = new URLSearchParams();
+        if (el.busqueda && el.busqueda.value && el.busqueda.value.trim()) {
+            params.append('q', el.busqueda.value.trim());
+        }
+        if (el.filtroEstado && el.filtroEstado.value) {
+            params.append('estado', el.filtroEstado.value);
+        }
+        if (el.filtroPrioridad && el.filtroPrioridad.value) {
+            params.append('prioridad', el.filtroPrioridad.value);
+        }
+        if (el.filtroUsuario && el.filtroUsuario.value) {
+            params.append('usuarioId', el.filtroUsuario.value);
+        }
+        params.append('size', '200');
+
+        const url = params.toString() ? `${API_INCIDENCIAS}?${params.toString()}` : API_INCIDENCIAS;
 
         try {
-            const respuesta = await fetch(url, {headers: {Accept: 'application/json'}});
+            const respuesta = await fetch(url, { headers: { Accept: 'application/json' } });
             if (!respuesta.ok) {
                 throw new Error(await leerError(respuesta));
             }
 
-            const incidencias = await respuesta.json();
+            const datos = await respuesta.json();
+            const incidencias = Array.isArray(datos) ? datos : (datos.content || []);
             pintarTabla(incidencias);
         } catch (error) {
             pintarTabla([]);
             mostrarError(`No se pudieron cargar las incidencias. ${mensajeDeFallo(error)}`);
-            el.contador.textContent = '';
+            if (el.contador) {
+                el.contador.textContent = '';
+            }
         } finally {
             mostrarCargando(false);
         }
     }
 
     function pintarTabla(incidencias) {
+        if (!el.cuerpoTabla) {
+            return;
+        }
         el.cuerpoTabla.replaceChildren();
 
         incidencias.forEach((incidencia) => {
             el.cuerpoTabla.appendChild(crearFila(incidencia));
         });
 
-        el.sinResultados.hidden = incidencias.length > 0;
-        el.contador.textContent = incidencias.length === 1
-            ? '1 incidencia'
-            : `${incidencias.length} incidencias`;
+        if (el.sinResultados) {
+            el.sinResultados.hidden = incidencias.length > 0;
+        }
+        if (el.contador) {
+            el.contador.textContent = incidencias.length === 1
+                ? '1 incidencia'
+                : `${incidencias.length} incidencias`;
+        }
     }
 
     function crearFila(incidencia) {
@@ -195,7 +250,7 @@
                     'Content-Type': 'application/json',
                     Accept: 'application/json'
                 },
-                body: JSON.stringify({estado: nuevoEstado})
+                body: JSON.stringify({ estado: nuevoEstado })
             });
 
             if (!respuesta.ok) {
@@ -210,18 +265,25 @@
     }
 
     // ---------------------------------------------------------------------
-    // Alta de incidencias (opcional)
+    // Alta de incidencias opcional
     // ---------------------------------------------------------------------
     function abrirFormulario() {
         limpiarErrorFormulario();
-        el.dialogo.showModal();
-        el.titulo.focus();
+        if (el.dialogo && typeof el.dialogo.showModal === 'function') {
+            el.dialogo.showModal();
+        }
+        if (el.titulo) {
+            el.titulo.focus();
+        }
     }
 
     async function enviarFormulario(evento) {
         evento.preventDefault();
         limpiarErrorFormulario();
 
+        if (!el.titulo) {
+            return;
+        }
         const titulo = el.titulo.value.trim();
         if (!titulo) {
             mostrarErrorFormulario('El título es obligatorio.');
@@ -231,11 +293,11 @@
 
         const cuerpo = {
             titulo,
-            descripcion: el.descripcion.value.trim() || null,
-            prioridad: el.prioridad.value
+            descripcion: el.descripcion && el.descripcion.value ? (el.descripcion.value.trim() || null) : null,
+            prioridad: el.prioridad ? el.prioridad.value : 'MEDIA'
         };
 
-        if (el.usuarioAsignado.value) {
+        if (el.usuarioAsignado && el.usuarioAsignado.value) {
             cuerpo.usuarioAsignadoId = Number(el.usuarioAsignado.value);
         }
 
@@ -254,10 +316,19 @@
                 throw new Error(await leerError(respuesta));
             }
 
-            el.dialogo.close();
-            el.formNueva.reset();
-            el.prioridad.value = 'MEDIA';
-            el.filtroEstado.value = '';
+            if (el.dialogo) {
+                el.dialogo.close();
+            }
+            if (el.formNueva) {
+                el.formNueva.reset();
+            }
+            if (el.prioridad) {
+                el.prioridad.value = 'MEDIA';
+            }
+            if (el.filtroEstado) el.filtroEstado.value = '';
+            if (el.filtroPrioridad) el.filtroPrioridad.value = '';
+            if (el.filtroUsuario) el.filtroUsuario.value = '';
+            if (el.busqueda) el.busqueda.value = '';
             await cargarIncidencias();
         } catch (error) {
             mostrarErrorFormulario(`No se pudo crear la incidencia. ${mensajeDeFallo(error)}`);
@@ -267,8 +338,11 @@
     }
 
     async function cargarUsuarios() {
+        if (!el.usuarioAsignado) {
+            return;
+        }
         try {
-            const respuesta = await fetch(API_USUARIOS, {headers: {Accept: 'application/json'}});
+            const respuesta = await fetch(API_USUARIOS, { headers: { Accept: 'application/json' } });
             if (!respuesta.ok) {
                 throw new Error(await leerError(respuesta));
             }
@@ -281,8 +355,30 @@
                 el.usuarioAsignado.appendChild(opcion);
             });
         } catch (error) {
-            // No es bloqueante: se puede crear una incidencia sin asignar.
+            // No se bloquea, se puede crear una incidencia sin asignar
             console.warn('No se pudieron cargar los usuarios:', mensajeDeFallo(error));
+        }
+    }
+
+    async function cargarUsuariosFiltro() {
+        if (!el.filtroUsuario) {
+            return;
+        }
+        try {
+            const respuesta = await fetch(API_USUARIOS, { headers: { Accept: 'application/json' } });
+            if (!respuesta.ok) {
+                throw new Error(await leerError(respuesta));
+            }
+
+            const usuarios = await respuesta.json();
+            usuarios.forEach((usuario) => {
+                const opcion = document.createElement('option');
+                opcion.value = usuario.id;
+                opcion.textContent = usuario.nombre;
+                el.filtroUsuario.appendChild(opcion);
+            });
+        } catch (error) {
+            console.warn('No se pudieron cargar los usuarios para el filtro:', mensajeDeFallo(error));
         }
     }
 
@@ -290,30 +386,48 @@
     // Utilidades de UI y errores
     // ---------------------------------------------------------------------
     function mostrarCargando(visible) {
+        if (!el.cargando) {
+            return;
+        }
         el.cargando.hidden = !visible;
     }
 
     function mostrarError(mensaje) {
+        if (!el.mensajeError || !el.textoError) {
+            return;
+        }
         el.textoError.textContent = mensaje;
         el.mensajeError.hidden = false;
     }
 
     function ocultarError() {
+        if (!el.mensajeError || !el.textoError) {
+            return;
+        }
         el.mensajeError.hidden = true;
         el.textoError.textContent = '';
     }
 
     function mostrarErrorFormulario(mensaje) {
+        if (!el.errorFormulario) {
+            return;
+        }
         el.errorFormulario.textContent = mensaje;
         el.errorFormulario.hidden = false;
     }
 
     function limpiarErrorFormulario() {
+        if (!el.errorFormulario) {
+            return;
+        }
         el.errorFormulario.hidden = true;
         el.errorFormulario.textContent = '';
     }
 
     function guardando(activo) {
+        if (!el.btnGuardar) {
+            return;
+        }
         el.btnGuardar.disabled = activo;
         el.btnGuardar.textContent = activo ? 'Creando…' : 'Crear incidencia';
     }

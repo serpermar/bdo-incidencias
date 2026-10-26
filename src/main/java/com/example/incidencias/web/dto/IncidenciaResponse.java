@@ -1,9 +1,11 @@
 package com.example.incidencias.web.dto;
 
+import com.example.incidencias.domain.Categoria;
 import com.example.incidencias.domain.Estado;
 import com.example.incidencias.domain.Incidencia;
 import com.example.incidencias.domain.Prioridad;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 public record IncidenciaResponse(
@@ -13,7 +15,11 @@ public record IncidenciaResponse(
         Prioridad prioridad,
         Estado estado,
         LocalDateTime fechaCreacion,
-        UsuarioResponse usuarioAsignado
+        UsuarioResponse usuarioAsignado,
+        Categoria categoria,
+        LocalDate fechaLimite,
+        String auditadoPor,
+        LocalDateTime fechaUltimaModificacionEstado
 ) {
 
     public static IncidenciaResponse from(Incidencia incidencia) {
@@ -24,7 +30,11 @@ public record IncidenciaResponse(
                 incidencia.getPrioridad(),
                 incidencia.getEstado(),
                 incidencia.getFechaCreacion(),
-                UsuarioResponse.from(incidencia.getUsuarioAsignado())
+                UsuarioResponse.from(incidencia.getUsuarioAsignado()),
+                incidencia.getCategoria(),
+                incidencia.getFechaLimite(),
+                incidencia.getAuditadoPor(),
+                incidencia.getFechaUltimaModificacionEstado()
         );
     }
 }

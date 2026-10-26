@@ -1,18 +1,19 @@
 package com.example.incidencias.repository;
 
-import com.example.incidencias.domain.Estado;
 import com.example.incidencias.domain.Incidencia;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 
-import java.util.List;
+import java.util.Optional;
 
-public interface IncidenciaRepository extends JpaRepository<Incidencia, Long> {
+public interface IncidenciaRepository extends JpaRepository<Incidencia, Long>, JpaSpecificationExecutor<Incidencia> {
 
-    // EntityGraph evita el problema N+1 al pintar el usuario asignado en el listado.
+    @Override
     @EntityGraph(attributePaths = "usuarioAsignado")
-    List<Incidencia> findAllByOrderByFechaCreacionDescIdDesc();
+    java.util.List<Incidencia> findAll();
 
+    @Override
     @EntityGraph(attributePaths = "usuarioAsignado")
-    List<Incidencia> findByEstadoOrderByFechaCreacionDescIdDesc(Estado estado);
+    Optional<Incidencia> findById(Long id);
 }

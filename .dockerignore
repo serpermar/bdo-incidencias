@@ -1,0 +1,15 @@
+target
+.git
+.gitignore
+.mvn
+mvnw
+mvnw.cmd
+*.md
+.idea
+.vscode
+*.iml
+node_modules
+Dockerfile
+docker-compose.yml
+Jenkinsfile
+sonar-project.properties

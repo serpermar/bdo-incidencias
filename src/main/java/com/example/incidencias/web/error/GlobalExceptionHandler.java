@@ -7,9 +7,11 @@ import com.example.incidencias.web.dto.ApiError;
 import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -36,6 +38,14 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(TransicionEstadoInvalidaException.class)
     public ResponseEntity<ApiError> conflicto(TransicionEstadoInvalidaException ex, HttpServletRequest request) {
         return construir(HttpStatus.CONFLICT, ex.getMessage(), request, List.of());
+    }
+
+    @ExceptionHandler(ObjectOptimisticLockingFailureException.class)
+    public ResponseEntity<ApiError> conflictoOptimista(ObjectOptimisticLockingFailureException ex,
+                                                       HttpServletRequest request) {
+        return construir(HttpStatus.CONFLICT,
+                "La incidencia ha sido modificada por otro usuario. Actualiza el listado e inténtalo de nuevo.",
+                request, List.of());
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
