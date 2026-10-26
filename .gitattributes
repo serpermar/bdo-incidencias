@@ -1,0 +1,11 @@
+# Normaliza los finales de línea en el repositorio.
+* text=auto
+
+# Los scripts del wrapper deben conservar LF para poder ejecutarse en Linux/macOS.
+mvnw text eol=lf
+mvnw.cmd text eol=crlf
+
+*.java text eol=lf
+*.md text eol=lf
+*.yml text eol=lf
+*.sql text eol=lf
